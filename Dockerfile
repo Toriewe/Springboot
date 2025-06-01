@@ -1,14 +1,26 @@
-# Usa una imagen con Java 17
-FROM eclipse-temurin:17-jdk
+# Imagen base con Maven y Java
+FROM maven:3.9.3-eclipse-temurin-17 AS build
 
-# Crea un directorio en el contenedor
+# Crea directorio de trabajo
 WORKDIR /app
 
-# Copia el archivo .jar al contenedor
-COPY target/*.jar app.jar
+# Copia los archivos al contenedor
+COPY pom.xml .
+COPY src ./src
 
-# Expone el puerto (debe coincidir con el de tu app)
+# Empaqueta la app (esto genera el .jar)
+RUN mvn clean package -DskipTests
+
+# Etapa de ejecución
+FROM eclipse-temurin:17-jdk
+
+WORKDIR /app
+
+# Copia el .jar desde la etapa anterior
+COPY --from=build /app/target/*.jar app.jar
+
+# Expone el puerto
 EXPOSE 8080
 
-# Comando para ejecutar tu aplicación
+# Ejecuta la app
 ENTRYPOINT ["java", "-jar", "app.jar"]
